@@ -4,6 +4,9 @@ Changelog
 2.0 (unreleased)
 ~~~~~~~~~~~~~~~~
 
+* Complete the extension profile by adding the rolemap file.
+  [hannosch]
+
 * Avoid a test dependency on quick installer.
   [hannosch]
 
