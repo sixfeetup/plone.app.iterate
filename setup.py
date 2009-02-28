@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 import os
 
-version = '1.2.4'
+version = '2.0'
 
 setup(name='plone.app.iterate',
       version=version,
@@ -47,8 +47,8 @@ setup(name='plone.app.iterate',
           'Products.DCWorkflow',
           'Products.statusmessages',
           'ZODB3',
-          # 'Acquisition',
-          # 'DateTime',
-          # 'Zope2',
+          'Acquisition',
+          'DateTime',
+          'Zope2',
       ],
       )
