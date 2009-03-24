@@ -4,6 +4,12 @@ Changelog
 2.0 (unreleased)
 ~~~~~~~~~~~~~~~~
 
+* Add an alternative IObjectCopier implementation that doesn't touch
+  subitems of folders.  That is, a folder is checked out without its
+  contents, and on check in, contents from the original object are
+  used.
+  [nouri]
+
 * Complete the extension profile by adding the rolemap file.
   [hannosch]
 

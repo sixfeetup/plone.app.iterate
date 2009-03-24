@@ -23,54 +23,41 @@
 $Id: test_iterate.py 1595 2006-08-24 00:15:21Z hazmat $
 """
 
-import os, sys
+import zope.component
 
-from zope.component import getMultiAdapter
-
-from Acquisition import aq_base
 from AccessControl import getSecurityManager
 
-from plone.app.iterate.interfaces import ICheckinCheckoutPolicy
+from plone.app.iterate import interfaces
+from plone.app.iterate import copier
 
 from Products.PloneTestCase import PloneTestCase
 from Testing.ZopeTestCase import FunctionalDocFileSuite
 PloneTestCase.setupPloneSite()
 
+def setup_test(test):
+    test.setRoles(['Manager',])
+
+    # Since we depend on ZCML being loaded, we can't do this
+    # until the layer is set up
+
+    test.portal.portal_setup.runAllImportStepsFromProfile(
+        'profile-plone.app.iterate:plone.app.iterate')
+
+    # add a folder with two documents in it
+    test.portal.invokeFactory('Folder', 'docs')
+    test.portal.docs.invokeFactory('Document', 'doc1')
+    test.portal.docs.invokeFactory('Document', 'doc2')
+
+    # add a working copy folder
+    test.portal.invokeFactory('Folder', 'workarea')
+
+    test.repo = test.portal.portal_repository
+    test.wf   = test.portal.portal_workflow
+
 class TestIterations(PloneTestCase.PloneTestCase):
 
     def afterSetUp(self):
-        self.setRoles(['Manager',])
-        
-        # Since we depend on ZCML being loaded, we can't do this
-        # until the layer is set up
-
-        self.portal.portal_setup.runAllImportStepsFromProfile(
-            'profile-plone.app.iterate:plone.app.iterate')
-
-        # add a folder with two documents in it
-        self.portal.invokeFactory('Folder', 'docs')
-        self.portal.docs.invokeFactory('Document', 'doc1')
-        self.portal.docs.invokeFactory('Document', 'doc2')
-
-        # add a working copy folder
-        self.portal.invokeFactory('Folder', 'workarea')
-
-        self.repo = self.portal.portal_repository
-        self.wf   = self.portal.portal_workflow
-
-    def beforeTearDown(self):
-        self.repo = None
-        self.wf   = None
-
-    def shim_test( self, test_method):
-
-        try:
-            test_method()
-        except:
-            import sys, pdb, traceback
-            ec, e, tb = sys.exc_info()
-            traceback.print_exc()            
-            pdb.post_mortem( tb )
+        setup_test(self)
 
     def test_workflowState( self ):
         # ensure baseline workflow state is retained on checkin, including security
@@ -87,12 +74,13 @@ class TestIterations(PloneTestCase.PloneTestCase):
         state = self.wf.getInfoFor( doc, 'review_state')
         
         self.repo.save( doc )
-        wc = ICheckinCheckoutPolicy( doc ).checkout( self.portal.workarea )
+        wc = interfaces.ICheckinCheckoutPolicy( doc ).checkout(
+            self.portal.workarea)
         wc_state = self.wf.getInfoFor( wc, 'review_state')
         
         self.assertNotEqual( state, wc_state )
 
-        ICheckinCheckoutPolicy( wc ).checkin( "modified" )
+        interfaces.ICheckinCheckoutPolicy( wc ).checkin( "modified" )
         bstate = self.wf.getInfoFor( wc, 'review_state')
         self.assertEqual( state, bstate )
         self.setRoles(['Owner',])       
@@ -106,7 +94,8 @@ class TestIterations(PloneTestCase.PloneTestCase):
         history = self.repo.getHistory( doc )
         self.assertEqual( len(history), 0 )
 
-        ICheckinCheckoutPolicy( doc ).checkout( self.portal.workarea )
+        interfaces.ICheckinCheckoutPolicy( doc ).checkout(
+            self.portal.workarea)
 
         history = self.repo.getHistory( doc )
         self.assertEqual( len(history), 1 )
@@ -114,7 +103,8 @@ class TestIterations(PloneTestCase.PloneTestCase):
         doc2 = self.portal.docs.doc2
         self.repo.save( doc2 )
 
-        ICheckinCheckoutPolicy( doc2 ).checkout( self.portal.workarea )
+        interfaces.ICheckinCheckoutPolicy( doc2 ).checkout(
+            self.portal.workarea)
 
         history = self.repo.getHistory( doc2 )
         self.assertEqual( len(history), 1 )
@@ -124,9 +114,10 @@ class TestIterations(PloneTestCase.PloneTestCase):
         doc = self.portal.docs.doc1
         doc.addReference( self.portal.docs )
         self.assertEqual( len(doc.getReferences("zebra")), 0)
-        wc = ICheckinCheckoutPolicy( doc ).checkout( self.portal.workarea )
+        wc = interfaces.ICheckinCheckoutPolicy(
+            doc).checkout( self.portal.workarea )
         wc.addReference( self.portal.docs.doc2, "zebra")        
-        doc = ICheckinCheckoutPolicy( wc ).checkin( "updated" )
+        doc = interfaces.ICheckinCheckoutPolicy( wc ).checkin( "updated" )
         self.assertEqual( len(doc.getReferences("zebra")), 1 )
         
     def test_wcNewBackwardReferencesCopied( self ):
@@ -134,10 +125,11 @@ class TestIterations(PloneTestCase.PloneTestCase):
 
         doc = self.portal.docs.doc1
         self.assertEqual( len(doc.getBackReferences("zebra")), 0)
-        wc = ICheckinCheckoutPolicy( doc ).checkout( self.portal.workarea )
+        wc = interfaces.ICheckinCheckoutPolicy( doc ).checkout(
+            self.portal.workarea)
         self.portal.docs.doc2.addReference( wc, "zebra")
         self.assertEqual( len( wc.getBackReferences("zebra")), 1 )        
-        doc = ICheckinCheckoutPolicy( wc ).checkin( "updated")
+        doc = interfaces.ICheckinCheckoutPolicy( wc ).checkin( "updated")
         self.assertEqual( len( doc.getBackReferences("zebra")), 1 )
 
     def test_baselineReferencesMaintained( self ):
@@ -148,9 +140,10 @@ class TestIterations(PloneTestCase.PloneTestCase):
         doc.addReference( self.portal.docs, "elephant" )
         self.portal.docs.doc2.addReference( doc )
 
-        wc = ICheckinCheckoutPolicy( doc ).checkout( self.portal.workarea )
+        wc = interfaces.ICheckinCheckoutPolicy( doc ).checkout(
+            self.portal.workarea)
 
-        doc = ICheckinCheckoutPolicy( wc ).checkin( "updated" )
+        doc = interfaces.ICheckinCheckoutPolicy( wc ).checkin( "updated" )
 
         self.assertEqual( len(doc.getReferences()), 1 )
         self.assertEqual( len(doc.getBackReferences()), 1 )
@@ -174,11 +167,12 @@ class TestIterations(PloneTestCase.PloneTestCase):
         ref = doc.addReference( self.portal.docs, "zebra", referenceClass=CustomReference )
         ref.custom_state = "hello world"
 
-        wc = ICheckinCheckoutPolicy( doc ).checkout( self.portal.workarea )
+        wc = interfaces.ICheckinCheckoutPolicy( doc ).checkout(
+            self.portal.workarea)
 
         self.assertEqual( len(wc.getReferences("zebra")), 0)
 
-        doc = ICheckinCheckoutPolicy( wc ).checkin( "updated" )
+        doc = interfaces.ICheckinCheckoutPolicy( wc ).checkin( "updated" )
 
         self.assertEqual( len(doc.getReferences("zebra")), 1)
 
@@ -187,12 +181,59 @@ class TestIterations(PloneTestCase.PloneTestCase):
         self.assert_( hasattr( ref, "custom_state") )
         self.assertEqual( ref.custom_state, "hello world")
 
+class TestNoSubitemsCopier(TestIterations):
+    # Test an alternative IObjectCopier implementation allows us
+    # to not copy subobjects of folders on check-out:
+    def afterSetUp(self):
+        setup_test(self)
+        gsm = zope.component.getGlobalSiteManager()
+        gsm.registerAdapter(copier.NoSubItemsCopier,
+                            provided=interfaces.IObjectCopier)
+        
+    def beforeTearDown(self):
+        gsm = zope.component.getGlobalSiteManager()
+        gsm.unregisterAdapter(copier.NoSubItemsCopier,
+                              provided=interfaces.IObjectCopier)
+
+    def test_checkout_folder(self):
+        docs = self.portal.docs
+        doc1 = docs.doc1
+
+        # We make a checkout of the docs folder:
+        docs_wc = interfaces.ICheckinCheckoutPolicy(docs).checkout(
+            self.portal.workarea)
+
+        # The checkout doesn't have any subitems, while the original
+        # still does:
+        self.assertEqual(len(docs_wc.objectIds()), 0)
+        self.failUnless(docs.objectIds(), ['doc1', 'doc2'])
+
+        # We add two items in the working copy folder; the first one
+        # will overwrite the existing item in the baseline, while the
+        # second one won't will just be added:
+        docs_wc.invokeFactory('Document', 'doc2')
+        docs_wc.invokeFactory('Document', 'doc3')
+        doc3 = docs_wc['doc3']
+
+        # After checking in, we see that subitems were preserved and
+        # still the same:
+        docs = interfaces.ICheckinCheckoutPolicy(docs_wc).checkin("updated")
+        self.assertEqual(len(docs.objectIds()), 3)
+
+        self.failUnless(docs.objectIds(), ['doc1', 'doc2', 'doc3'])
+        self.failUnless(docs.doc1.aq_base is doc1.aq_base)
+        self.failUnless(docs.doc3.aq_base is doc3.aq_base)
+
 
 def test_suite():
     from unittest import TestSuite, makeSuite
     suite = TestSuite()
-    suite.addTest(makeSuite(TestIterations))
+
     suite.addTest(FunctionalDocFileSuite(
         'browser.txt',
         test_class=PloneTestCase.FunctionalTestCase))
+
+    suite.addTest(makeSuite(TestIterations))
+    suite.addTest(makeSuite(TestNoSubitemsCopier))
+
     return suite

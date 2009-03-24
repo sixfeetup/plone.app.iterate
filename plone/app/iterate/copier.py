@@ -197,3 +197,40 @@ class ContentCopier( object ):
             
             mode_method = getattr( adapter, mode )
             mode_method( baseline, wc, references, annotations )
+
+class NoSubItemsCopier(ContentCopier):
+    def _is_folderish(self):
+        return bool(getattr(aq_base(self.context), 'isPrincipiaFolderish', 0))
+
+    def _replaceBaseline(self, baseline):
+        if self._is_folderish():
+            # If we're dealing with a folder, we'll first copy all
+            # folder contents around by mucking with the private
+            # ObjectManager API:
+            old_baseline_object_infos = baseline._objects
+            old_baseline_objects = baseline.objectItems()
+
+            new_baseline = super(
+                NoSubItemsCopier, self)._replaceBaseline(baseline)
+            new_baseline_object_ids = new_baseline.objectIds()
+
+            for info in old_baseline_object_infos:
+                if info['id'] not in new_baseline_object_ids:
+                    new_baseline._objects += (info,)
+                
+            for name, obj in old_baseline_objects:
+                if name not in new_baseline_object_ids:
+                    setattr(new_baseline, name, obj)
+            return new_baseline
+        else:
+            return super(NoSubItemsCopier, self)._replaceBaseline(baseline)
+
+    def _copyBaseline( self, container ):
+        target = super(NoSubItemsCopier, self)._copyBaseline(container)
+        
+        if self._is_folderish():
+            # After the baseline was copied, we'll remove all subitems
+            # of the copy:
+            target.manage_delObjects(target.objectIds())
+
+        return target
