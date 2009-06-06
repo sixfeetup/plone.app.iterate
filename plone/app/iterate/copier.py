@@ -27,11 +27,15 @@ $Id: copier.py 1824 2007-02-08 17:59:41Z hazmat $
 from zope import interface, component
 from zope.annotation.interfaces import IAnnotations
 
+from AccessControl import getSecurityManager
+from AccessControl.SecurityManagement import setSecurityManager
+from AccessControl.ImplPython import SecurityManager
 from Acquisition import aq_base, aq_parent, aq_inner
 from ZODB.PersistentMapping import PersistentMapping
 
 from Products.Archetypes.Referenceable import Referenceable
 from Products.CMFCore.utils import getToolByName
+from Products.CMFCore.tests.base.security import PermissiveSecurityPolicy
 from Products.DCWorkflow.DCWorkflow import DCWorkflowDefinition
 
 import interfaces
@@ -231,6 +235,23 @@ class NoSubItemsCopier(ContentCopier):
         if self._is_folderish():
             # After the baseline was copied, we'll remove all subitems
             # of the copy:
-            target.manage_delObjects(target.objectIds())
-
+            
+            # we have to disable the SecurityManager
+            # (the user might not be allowed to delete objects)
+            old = getSecurityManager()
+            new = AllowAllSecurityManager(old._thread_id, old._context)
+            setSecurityManager(new)
+            try:
+                # now delete the children
+                target.manage_delObjects(target.objectIds())
+            finally:
+                # reset SecurityManager
+                setSecurityManager(old)
+            
         return target
+
+class AllowAllSecurityManager(SecurityManager):
+    """Custom SecurityManager to allow deletion of objects for NoSubItemsCopier
+    """
+    def checkPermission(self, permission, object):
+        return True
