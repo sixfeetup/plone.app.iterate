@@ -4,6 +4,10 @@ Changelog
 2.0 (unreleased)
 ~~~~~~~~~~~~~~~~
 
+* Added the z3c.autoinclude entry point so this package is automatically loaded
+  on Plone 3.3 and above.
+  [hannosch]
+
 * Add an alternative IObjectCopier implementation that doesn't touch
   subitems of folders.  That is, a folder is checked out without its
   contents, and on check in, contents from the original object are

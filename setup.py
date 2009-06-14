@@ -51,4 +51,8 @@ setup(name='plone.app.iterate',
           'DateTime',
           'Zope2',
       ],
+      entry_points="""
+      [z3c.autoinclude.plugin]
+      target = plone
+      """,
       )
