@@ -1,6 +1,8 @@
-
 Setup
 -----
+
+  >>> result = self.portal.portal_setup.runAllImportStepsFromProfile(
+  ...   'profile-Products.CMFEditions:CMFEditions')
 
   >>> result = self.portal.portal_setup.runAllImportStepsFromProfile(
   ...   'profile-plone.app.iterate:plone.app.iterate')

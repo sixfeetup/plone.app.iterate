@@ -41,6 +41,9 @@ def setup_test(test):
     # until the layer is set up
 
     test.portal.portal_setup.runAllImportStepsFromProfile(
+        'profile-Products.CMFEditions:CMFEditions')
+
+    test.portal.portal_setup.runAllImportStepsFromProfile(
         'profile-plone.app.iterate:plone.app.iterate')
 
     # add a folder with two documents in it
