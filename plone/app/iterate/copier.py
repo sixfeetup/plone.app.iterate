@@ -27,15 +27,11 @@ $Id: copier.py 1824 2007-02-08 17:59:41Z hazmat $
 from zope import interface, component
 from zope.annotation.interfaces import IAnnotations
 
-from AccessControl import getSecurityManager
-from AccessControl.SecurityManagement import setSecurityManager
-from AccessControl.ImplPython import SecurityManager
 from Acquisition import aq_base, aq_parent, aq_inner
 from ZODB.PersistentMapping import PersistentMapping
 
 from Products.Archetypes.Referenceable import Referenceable
 from Products.CMFCore.utils import getToolByName
-from Products.CMFCore.tests.base.security import PermissiveSecurityPolicy
 from Products.DCWorkflow.DCWorkflow import DCWorkflowDefinition
 
 import interfaces
@@ -230,28 +226,25 @@ class NoSubItemsCopier(ContentCopier):
             return super(NoSubItemsCopier, self)._replaceBaseline(baseline)
 
     def _copyBaseline( self, container ):
-        target = super(NoSubItemsCopier, self)._copyBaseline(container)
-        
         if self._is_folderish():
-            # After the baseline was copied, we'll remove all subitems
-            # of the copy:
-            
-            # we have to disable the SecurityManager
-            # (the user might not be allowed to delete objects)
-            old = getSecurityManager()
-            new = AllowAllSecurityManager(old._thread_id, old._context)
-            setSecurityManager(new)
-            try:
-                # now delete the children
-                target.manage_delObjects(target.objectIds())
-            finally:
-                # reset SecurityManager
-                setSecurityManager(old)
-            
-        return target
+            baseline = self.context
+            baseline_object_infos = baseline._objects
+            baseline_objects = baseline.objectItems()
 
-class AllowAllSecurityManager(SecurityManager):
-    """Custom SecurityManager to allow deletion of objects for NoSubItemsCopier
-    """
-    def checkPermission(self, permission, object):
-        return True
+            # Delete contained objects from the original baseline
+            baseline._objects = ()
+            for name, obj in baseline_objects:
+                delattr(baseline, name)
+
+            # Copy the baseline now
+            target = super(NoSubItemsCopier, self)._copyBaseline(container)
+
+            # And put back deleted objects to the original baseline
+            baseline._objects = baseline_object_infos
+            for name, obj in baseline_objects:
+                setattr(baseline, name, obj)
+
+        else:
+            target = super(NoSubItemsCopier, self)._copyBaseline(container)
+
+        return target
