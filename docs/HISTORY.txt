@@ -4,6 +4,11 @@ Changelog
 2.0 (unreleased)
 ----------------
 
+* Changed IIterateAware superclass from IReferenceable to Interface,
+  because plone.app.dexterity should be usable for contents not
+  implementing IReferenceable (like all dexterity content types).
+  [jbaumann]
+
 * Adjusted test setup for Plone 5.
   [hannosch]
 
