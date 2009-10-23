@@ -22,7 +22,7 @@
 
     <!-- Policy and behaviour for basic objects -->
     <class class="Products.Archetypes.BaseObject.BaseObject">
-        <implements interface=".interfaces.IIterateAware" />
+        <implements interface=".interfaces.IATIterateAware" />
     </class>
     
     <adapter factory=".policy.CheckinCheckoutPolicyAdapter" />

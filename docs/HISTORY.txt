@@ -4,6 +4,14 @@ Changelog
 2.0 (unreleased)
 ----------------
 
+* Added new IATIterateAware interfaces, which is registered on AT-BaseObject.
+  Now IIterateAware (which is the superclass of IATIterateAware) has no longer
+  IReferenceable (AT) as superclass.
+  That makes it possible to use IIterateAware for non-Archetypes objects which
+  should not implement IReferenceable (used in dexterity in plone.stagingbehavior).
+  see http://groups.google.com/group/dexterity-development/t/dde3980a8279f852
+  [23.10.2009, jbaumann]
+
 * Changed IIterateAware superclass from IReferenceable to Interface,
   because plone.app.dexterity should be usable for contents not
   implementing IReferenceable (like all dexterity content types).
