@@ -19,6 +19,7 @@
 # along with CMFDeployment; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ##################################################################
+from Products.Archetypes.interfaces.base import IBaseObject
 
 """
 $Id: copier.py 1824 2007-02-08 17:59:41Z hazmat $
@@ -131,6 +132,7 @@ class ContentCopier( object ):
             wf.updateRoleMappingsFor( new_baseline )
 
         # reattach the source's uid, this will update wc refs to point back to the new baseline
+        # not that it will not work with dexterity
         new_baseline._setUID( baseline.UID() )
 
         # reattach the source's history id, to get the previous version ancestry
