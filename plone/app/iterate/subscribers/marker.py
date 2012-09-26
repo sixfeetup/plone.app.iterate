@@ -28,7 +28,7 @@ from plone.app.iterate import interfaces
 
 def handleCheckout( event ):
     marker.mark( event.working_copy, interfaces.IWorkingCopy )
-    marker.mark( event.object, interfaces.IBaseline )        
+    marker.mark( event.object, interfaces.IBaseline )
 
 def handleCheckin( event ):
     marker.erase( event.object, interfaces.IWorkingCopy )
