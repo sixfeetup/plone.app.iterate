@@ -1,6 +1,18 @@
 from setuptools import setup, find_packages
 
-version = '2.1.8.dev0'
+
+def get_git_version(abbrev=4):
+    from subprocess import Popen, PIPE
+    try:
+        p = Popen(['git', 'rev-parse', 'HEAD'],
+                  stdout=PIPE, stderr=PIPE)
+        p.stderr.close()
+        line = p.stdout.readlines()[0]
+        return '-' + line.strip()[:abbrev]
+    except:
+        return ''
+
+version = '2.1.8.dev0' + get_git_version()
 
 setup(name='plone.app.iterate',
       version=version,
